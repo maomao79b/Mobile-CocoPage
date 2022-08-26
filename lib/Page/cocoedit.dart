@@ -5,31 +5,158 @@ import 'package:fluttertoast/fluttertoast.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
+import 'package:mobile_list_page_cocopage/coco_page.dart';
 
-class cocoadding extends StatefulWidget {
-  const cocoadding({Key? key}) : super(key: key);
+class CocoEdit extends StatefulWidget {
+  const CocoEdit({Key? key,
+  required this.coco_id,
+  required this.cocovari_id,
+  required this.coco_start,
+  required this.coco_lat,
+  required this.coco_long
+  }) : super(key: key);
+
+  final String coco_id, cocovari_id, coco_start, coco_lat, coco_long;
 
   @override
-  State<cocoadding> createState() => _cocoaddingState();
+  State<CocoEdit> createState() => _CocoEditState();
 }
 
-class _cocoaddingState extends State<cocoadding> {
+class _CocoEditState extends State<CocoEdit> {
+
+  Position? _currentPosition;
+  LocationPermission? permission;
   TextEditingController coco_where = new TextEditingController();
   TextEditingController coco_start = new TextEditingController();
   String? coco_lat;
   String? coco_long;
   String? selectedValue;
-  Position? _currentPosition;
-  LocationPermission? permission;
   List categoryItemList = [];
 
+  void setFromvalue(){
+    coco_lat = widget.coco_long;
+    coco_long = widget.coco_lat;
+    List gfg = [widget.coco_lat, widget.coco_long];
+    coco_where.text = gfg.toString();
+    coco_start.text = widget.coco_start;
+    selectedValue = widget.cocovari_id;
+
+  }
+
   @override
-  void initState(){
+  void initState() {
     coco_start.text = "";
+    setFromvalue();
     getAllCategory();
-    _getCurrentLocation();
     super.initState();
   }
+
+  editBang(){
+    print(widget.coco_id);
+    print(coco_where.value);
+    print(coco_start.value);
+    print(selectedValue);
+  }
+
+  Future<List> getAllCategory() async{
+    Uri url = Uri.parse('http://cocoworks.cocopatch.com/cocovari.php');
+    var response = await http.get(url);
+    if(response.statusCode == 200){
+      var jsonData = json.decode(response.body);
+      setState((){
+        categoryItemList = jsonData;
+      });
+      return categoryItemList;
+    }else{
+      throw Exception("We were not able to successfully download the json data.");
+    }
+  }
+
+  Future Cocoedit() async{
+    Uri url = Uri.parse('http://cocoworks.cocopatch.com/cocoupdate.php');
+    var response = await http.post(url, body:{
+      "coco_id":widget.coco_id,
+      "coco_start": coco_start.text,
+      "cocovari_id":selectedValue,
+      "coco_lat": coco_lat.toString(),
+      "coco_long": coco_long.toString()
+    });
+    var data = json.decode(response.body);
+    var fToast = FToast();
+    fToast.init(context);
+    print(data);
+    if(data == "dateError"){
+      Fluttertoast.showToast(
+          msg:"กรุณาใส่ชื่อรายการ",
+          toastLength: Toast.LENGTH_SHORT,
+          timeInSecForIosWeb: 3,
+          backgroundColor: Colors.red,
+          textColor: Colors.white,
+          fontSize: 16
+      );
+    }else if(data == "success"){
+      Fluttertoast.showToast(
+          msg:"แก้ไขข้อมูลสำเร็จ",
+          toastLength: Toast.LENGTH_SHORT,
+          timeInSecForIosWeb: 3,
+          backgroundColor: Colors.greenAccent,
+          textColor: Colors.black,
+          fontSize: 16
+      );
+      Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context)=> Cocopage())
+      );
+    }else{
+      print;
+      Fluttertoast.showToast(
+          msg:"กรุณาใส่ข้อมูลให้ครบ",
+          toastLength: Toast.LENGTH_SHORT,
+          timeInSecForIosWeb: 3,
+          backgroundColor: Colors.redAccent,
+          textColor: Colors.black,
+          fontSize: 16
+      );
+    }
+  }
+
+  Future<bool> _onWillPop() async{
+    return (await showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text("การยืนยันแก้ไข"),
+          content: const Text("คุณยืนยันที่จะแก้ไข"),
+          actions: <Widget>[
+            TextButton(
+              onPressed: (){
+                Navigator.of(context).pop(false);
+                Cocoedit();
+                editBang();
+              },
+              child: const Text("ยืนยัน"),
+            ),
+            TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: const Text("ยกเลิก")
+            )
+          ],
+        ),
+    )) ?? false;
+  }
+
+  _getCurrentLocation(){
+    Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.best,
+        forceAndroidLocationManager: true
+    ).then((Position position){
+      setState((){
+        _currentPosition = position;
+      });
+    }).catchError((e){
+      print(e);
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -38,13 +165,18 @@ class _cocoaddingState extends State<cocoadding> {
           flexibleSpace: Container(
             decoration: const BoxDecoration(
               gradient: LinearGradient(
-                  colors: [Colors.white, Colors.greenAccent],
-                stops: [0.5, 1]
+                colors: [Colors.white, Colors.greenAccent],
+                stops: [0.5, 1.0]
               )
             ),
           ),
           title: const Center(
-            child: Text('เพิ่มข้อมูลต้นมะพร้าว',style: TextStyle(color: Colors.black),),
+            child: Text(
+              "แก้ไขข้อมูลต้นมะพร้าว",
+              style: TextStyle(
+                color: Colors.black
+              ),
+            ),
           ),
         ),
         body: Container(
@@ -58,8 +190,8 @@ class _cocoaddingState extends State<cocoadding> {
                 padding: const EdgeInsets.all(10),
                 child: DropdownButtonFormField(
                   decoration: const InputDecoration(
-                    border: OutlineInputBorder(),
-                    labelText: "เลือกพันธุ์"
+                      border: OutlineInputBorder(),
+                      labelText: "เลือกพันธุ์"
                   ),
                   value: selectedValue,
                   hint: const Text("เลือกพันธุ์"),
@@ -67,12 +199,13 @@ class _cocoaddingState extends State<cocoadding> {
                     return DropdownMenuItem(
                       value: list['cocovari_id'],
                       child: Text(list['cocovari_name']),
-                  );
+                    );
                   }).toList(),
                   icon: const Icon(Icons.arrow_drop_down),
                   onChanged: (value){
                     setState((){
                       selectedValue = value.toString();
+                      print(selectedValue);
                     });
                   },
                 ),
@@ -115,9 +248,9 @@ class _cocoaddingState extends State<cocoadding> {
                 child: TextField(
                   controller: coco_start,
                   decoration: const InputDecoration(
-                    prefixIcon: Icon(Icons.calendar_today),
-                    border: OutlineInputBorder(),
-                    labelText: "ว/ด/ป"
+                      prefixIcon: Icon(Icons.calendar_today),
+                      border: OutlineInputBorder(),
+                      labelText: "ว/ด/ป"
                   ),
                   readOnly: true,
                   onTap: () async{
@@ -139,21 +272,24 @@ class _cocoaddingState extends State<cocoadding> {
                   },
                 ),
               ),
+              SizedBox(
+                height: 30,
+              ),
               Center(
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: <Widget>[
                     Container(
-                        padding: const EdgeInsets.fromLTRB(0,0,0,0),
+                      padding: const EdgeInsets.fromLTRB(0,0,0,0),
                       height: 50,
                       width: 150,
                       child: ElevatedButton(
                         onPressed: (){
-                          Cocoadd();
+                          _onWillPop();
                         },
                         style: ElevatedButton.styleFrom(
-                          primary: Colors.green,
-                          onPrimary: Colors.white
+                            primary: Colors.green,
+                            onPrimary: Colors.white
                         ),
                         child: const Text('ยืนยัน'),
                       ),
@@ -182,87 +318,4 @@ class _cocoaddingState extends State<cocoadding> {
       ),
     );
   }
-
-  Future<List> getAllCategory() async{
-    Uri url = Uri.parse('http://cocoworks.cocopatch.com/cocovari.php');
-    var response = await http.get(url);
-    if(response.statusCode == 200){
-      var jsonData = json.decode(response.body);
-      setState((){
-        categoryItemList = jsonData;
-      });
-      return categoryItemList;
-    }else{
-      throw Exception("We were not able to successfully download the json data.");
-    }
-  }
-  Future Cocoadd() async{
-    Uri url = Uri.parse('http://cocoworks.cocopatch.com/cocoadd.php');
-    var response = await http.post(url, body:{
-      "coco_start": coco_start.text,
-      "cocovari_id":selectedValue,
-      "coco_lat": coco_lat.toString(),
-      "coco_long": coco_long.toString()
-    });
-    var data;
-    print("start : "+coco_start.text);
-    print("selected : "+selectedValue.toString());
-    print("coco_lat : "+coco_lat.toString());
-    print("coco_long : "+coco_long.toString());
-    if(response.body.isNotEmpty){
-      data = json.decode(response.body);
-      // data = response.statusCode
-      print(selectedValue);
-      print("gggggggggggggggggggggggggggggggg : ");
-    }
-    // print(data);
-    var fToast = FToast();
-    fToast.init(context);
-    print(fToast.init(context));
-    if(data == "dateError"){
-      Fluttertoast.showToast(
-        msg:"กรุณาใส่ชื่อรายการ",
-        toastLength: Toast.LENGTH_SHORT,
-        timeInSecForIosWeb: 3,
-        backgroundColor: Colors.red,
-        textColor: Colors.white,
-        fontSize: 16
-      );
-    }else if(data == "success"){
-      Fluttertoast.showToast(
-          msg:"ใส่ชื่อสำเร็จ",
-          toastLength: Toast.LENGTH_SHORT,
-          timeInSecForIosWeb: 3,
-          backgroundColor: Colors.greenAccent,
-          textColor: Colors.black,
-          fontSize: 16
-      );
-      Navigator.of(context).pop();
-    }else{
-      print;
-      Fluttertoast.showToast(
-          msg:"กรุณาใส่ข้อมูลให้ครบ",
-          toastLength: Toast.LENGTH_SHORT,
-          timeInSecForIosWeb: 3,
-          backgroundColor: Colors.redAccent,
-          textColor: Colors.black,
-          fontSize: 16
-      );
-    }
-  }
-
-  _getCurrentLocation(){
-    Geolocator.getCurrentPosition(
-      desiredAccuracy: LocationAccuracy.best,
-      forceAndroidLocationManager: true
-    ).then((Position position){
-      setState((){
-        _currentPosition = position;
-        print("hh = "+_currentPosition.toString());
-      });
-    }).catchError((e){
-      print(e);
-    });
-  }
 }
-
