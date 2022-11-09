@@ -107,35 +107,35 @@ class _GetPointsState extends State<GetPoints> {
         initialcameraposition = LatLng(latitude!, longitude!);
         mapController.moveCamera(CameraUpdate.newLatLng(LatLng(latitude, longitude)));
 
-        // setMarkers();
+        setMarkers();
       });
     });
   }
 
-  // creatMarker(context){
-  //   if( myLocation == "yes"){
-  //     ImageConfiguration configuration = createLocalImageConfiguration(context);
-  //     BitmapDescriptor.fromAssetImage(ImageConfiguration(size: Size(24,24)), "images/Alps-Switzerland.jpg")
-  //     .then((icon){
-  //       setState((){
-  //         customIcon = icon;
-  //       });
-  //     });
-  //   }
-  // }
+  creatMarker(context){
+    if( myLocation == "yes"){
+      ImageConfiguration configuration = createLocalImageConfiguration(context);
+      BitmapDescriptor.fromAssetImage(ImageConfiguration(size: Size(24,24)), "images/Alps-Switzerland.jpg")
+      .then((icon){
+        setState((){
+          customIcon = icon;
+        });
+      });
+    }
+  }
 
-  // setMarkers(){
-  //   creatMarker(context);
-  //   markers.add(
-  //     Marker(
-  //         markerId: MarkerId("Home"),
-  //       position: initialcameraposition,
-  //       icon: customIcon,
-  //       infoWindow: InfoWindow(
-  //         title: myLocation
-  //       )
-  //     )
-  //   );
-  //   setState((){});
-  // }
+  setMarkers(){
+    creatMarker(context);
+    markers.add(
+      Marker(
+          markerId: MarkerId("Home"),
+        position: initialcameraposition,
+        icon: customIcon,
+        infoWindow: InfoWindow(
+          title: myLocation
+        )
+      )
+    );
+    setState((){});
+  }
 }

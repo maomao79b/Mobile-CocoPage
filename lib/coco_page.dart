@@ -32,19 +32,6 @@ class _CocopageState extends State<Cocopage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        centerTitle: true,
-        elevation: 0,
-        backgroundColor: Colors.green,
-        titleSpacing: 0,
-        flexibleSpace: Container(
-          decoration: const BoxDecoration(),
-        ),
-        title: const Text(
-          "สวนของฉัน",
-          style: TextStyle(color: Colors.white),
-        ),
-      ),
       body: Padding(
         padding: const EdgeInsets.only(top: 10),
         child: Container(
